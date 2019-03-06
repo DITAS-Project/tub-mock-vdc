@@ -1,4 +1,4 @@
-# tub-mock-dal
+# tub-mock-vdc
 
 This is a mock version of a [DITAS](https://ditas-project.eu) VDC used for internal testing at TUB.
 
