@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -10,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/DITAS-Project/tub-mock-dal/dal"
@@ -55,7 +55,7 @@ func setupServer() {
 		IdleTimeout:  time.Second * 60,
 		Handler:      vdcServer.Router(),
 	}
-
+	fmt.Printf("started mock-vdc running at %d\n", viper.GetInt("port"))
 	server.ListenAndServe()
 }
 
@@ -82,7 +82,8 @@ func New() *VDCServer {
 	}
 
 	if server.dal {
-		conn, err := grpc.Dial(server.dalUri)
+
+		conn, err := grpc.Dial(server.dalUri, grpc.WithInsecure())
 
 		if err != nil {
 			fmt.Printf("could not connect to dal %+v\n", err)
@@ -143,7 +144,7 @@ func (v *VDCServer) traceFromRequest(r *http.Request, msg ...string) TraceMessag
 	trace.ParentSpanId = r.Header.Get("X-B3-SpanId")
 	trace.TraceId = r.Header.Get("X-B3-TraceId")
 	trace.Operation = "vdc-processing"
-	trace.Message = strings.Join(msg," ")
+	trace.Message = strings.Join(msg, " ")
 
 	return trace
 }
