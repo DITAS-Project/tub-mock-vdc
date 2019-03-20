@@ -212,6 +212,10 @@ func (v *VDCServer) notFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func (v *VDCServer) ask(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, X-DITAS-CALLBACK")
+
 	v.Log(fmt.Sprintf("[%s] %s", r.Method, r.RequestURI))
 	v.Trace(r, "vdc-request")
 
