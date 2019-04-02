@@ -109,8 +109,7 @@ func (v *VDCServer) Clean() {
 func (v *VDCServer) Router() *mux.Router {
 	r := mux.NewRouter()
 
-	r.Methods("GET").Path("/ask").Handler(http.HandlerFunc(v.ask))
-	r.Methods("OPTIONS").Path("/ask").Handler(http.HandlerFunc(v.ask))
+	r.Methods("GET", "OPTIONS").Path("/ask").Handler(http.HandlerFunc(v.ask))
 	r.NotFoundHandler = http.HandlerFunc(v.notFound)
 	return r
 }
@@ -214,8 +213,12 @@ func (v *VDCServer) notFound(w http.ResponseWriter, r *http.Request) {
 
 func (v *VDCServer) ask(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD")
+	//w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
+
+	if r.Method == "OPTIONS" {
+		return
+	}
 
 	v.Log(fmt.Sprintf("[%s] %s", r.Method, r.RequestURI))
 	v.Trace(r, "vdc-request")
