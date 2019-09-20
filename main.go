@@ -141,24 +141,37 @@ func (v *VDCServer) Log(msg string) {
 func (v *VDCServer) traceFromRequest(r *http.Request, msg ...string) TraceMessage {
 	trace := TraceMessage{}
 
-	trace.ParentSpanId = r.Header.Get("X-B3-SpanId")
-	trace.TraceId = r.Header.Get("X-B3-TraceId")
+	trace.ParentSpanId = r.Header.Get("X-B3-Spanid")
+	trace.TraceId = r.Header.Get("X-B3-Traceid")
 	trace.Operation = "vdc-processing"
 	trace.Message = strings.Join(msg, " ")
 
 	return trace
 }
 
-func (v *VDCServer) send(url string, msg TraceMessage) {
+func (v *VDCServer) send(url string, msg TraceMessage, verbe string) {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(msg)
-	http.Post(url, "application/json", b)
+	req, err := http.NewRequest(verbe, url, b)
+	if err != nil {
+		fmt.Errorf("could not send Request %+v\n", err)
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Errorf("could not send Request %+v\n", err)
+		return
+	} else {
+		fmt.Printf("send request got: %d \n", resp.StatusCode)
+	}
+
 }
 
 func (v *VDCServer) Trace(r *http.Request, msg ...string) {
 	if v.trace {
 		trace := v.traceFromRequest(r, msg...)
-		v.send(fmt.Sprintf("%s/v1/trace", v.logUri), trace)
+		v.send(fmt.Sprintf("%s/v1/trace", v.logUri), trace, "PUT")
 	}
 
 	fmt.Println("[Trace]", msg)
@@ -167,7 +180,7 @@ func (v *VDCServer) Trace(r *http.Request, msg ...string) {
 func (v *VDCServer) TraceClose(r *http.Request, msg ...string) {
 	if v.trace {
 		trace := v.traceFromRequest(r, msg...)
-		v.send(fmt.Sprintf("%s/v1/close", v.logUri), trace)
+		v.send(fmt.Sprintf("%s/v1/close", v.logUri), trace, "POST")
 	}
 
 	fmt.Println("[Close]", msg)
@@ -212,6 +225,7 @@ func (v *VDCServer) notFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func (v *VDCServer) ask(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Got New Request with %+v", r.Header)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	//w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
@@ -233,7 +247,7 @@ func (v *VDCServer) ask(w http.ResponseWriter, r *http.Request) {
 	} else {
 		v.SendMockResponse(w, r)
 	}
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 
 	v.TraceClose(r, "vdc-request")
 }
